@@ -1,11 +1,11 @@
-'use strict';
+"use strict";
 
-const throng = require('../../lib/throng');
+const throng = require("../../lib/throng").default;
 
 throng({
   lifetime: 0,
   start: () => {
-    console.log('worker');
+    console.log("worker");
     process.exit();
-  }
+  },
 });

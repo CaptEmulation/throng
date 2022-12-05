@@ -1,5 +1,5 @@
 {
-  "name": "throng",
+  "name": "@captemulation/throng",
   "version": "5.0.0",
   "description": "A simple worker-manager for clustered apps",
   "keywords": [
@@ -7,27 +7,29 @@
     "worker",
     "process"
   ],
-  "repository": "hunterloftis/throng",
-  "homepage": "https://github.com/hunterloftis/throng",
-  "bugs": "https://github.com/hunterloftis/throng/issues",
+  "repository": "captemulation/throng",
+  "homepage": "https://github.com/captemulation/throng",
+  "bugs": "https://github.com/captemulation/throng/issues",
   "main": "lib/throng.js",
+  "types": "src/throng.ts",
   "files": [
-    "lib"
+    "lib",
+    "src"
   ],
   "scripts": {
     "test": "mocha",
-    "test:bail": "mocha --bail"
+    "test:bail": "mocha --bail",
+    "prepublish": "tsc"
   },
   "engines": {
-    "node": ">= 10"
+    "node": ">= 14"
   },
-  "author": "Hunter Loftis <hunter@hunterloftis.com>",
+  "author": "John Dean <john.holmes.dean@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^18.11.11",
     "chai": "^4.2.0",
-    "mocha": "^8.1.3"
-  },
-  "dependencies": {
-    "lodash": "^4.17.20"
+    "mocha": "^8.1.3",
+    "typescript": "^4.9.3"
   }
 }
