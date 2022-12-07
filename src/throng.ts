@@ -1,6 +1,5 @@
 import cluster from "cluster";
 import os from "os";
-import { defaultsDeep } from "lodash";
 
 export type Signals =
   | "SIGUSR1"
