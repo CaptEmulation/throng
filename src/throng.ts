@@ -1,4 +1,4 @@
-import cluster from "cluster";
+import cluster, { Worker } from "cluster";
 import os from "os";
 
 export type Signals =
@@ -24,6 +24,7 @@ export interface IOptions {
   master?: (id?: number, disconnect?: () => void) => void | Promise<void>;
   worker: (id?: number, disconnect?: () => void) => void | Promise<void>;
   signals?: Signals[];
+  debugExitTimeout: number | undefined;
 }
 
 const nCPU = os.cpus().length;
@@ -37,6 +38,9 @@ export default async function throng(options: IOptions) {
     master: () => {},
     ...options,
   };
+
+  const times = new Map<number, { disconnect?: number; exit?: number }>();
+
   const { worker, master } = config;
 
   if (typeof worker !== "function") {
@@ -55,7 +59,8 @@ export default async function throng(options: IOptions) {
   fork(config.count);
 
   function listen() {
-    cluster.on("disconnect", revive);
+    cluster.on("disconnect", onDisconnect);
+    cluster.on("exit", onExit);
     config.signals.forEach((signal) => process.on(signal, shutdown(signal)));
   }
 
@@ -70,10 +75,58 @@ export default async function throng(options: IOptions) {
     };
   }
 
-  function revive() {
+  function onDisconnect(worker: Worker) {
+    // Store the disconnect time for this worker
+    if (config.debugExitTimeout) {
+      if (!times.has(worker.id)) {
+        times.set(worker.id, {
+          disconnect: Date.now(),
+        });
+      } else {
+        // Calculate the time difference between the disconnect and exit events, if the exit time is available
+        const workerTime = times.get(worker.id);
+        const now = Date.now();
+        if (
+          workerTime?.exit &&
+          now - workerTime.exit > config.debugExitTimeout
+        ) {
+          const durationInSeconds = (workerTime.exit - now) / 1000;
+          console.log(
+            `Worker ${worker.id} was alive for ${durationInSeconds}s past disconnect`,
+          );
+        }
+        times.delete(worker.id);
+      }
+    }
+
     if (!running) return;
     if (Date.now() >= reviveUntil) return;
     cluster.fork();
+  }
+
+  function onExit(worker: Worker) {
+    // Store the exit time for this worker
+    if (config.debugExitTimeout) {
+      if (!times.has(worker.id)) {
+        times.set(worker.id, {
+          exit: Date.now(),
+        });
+      } else {
+        // Calculate the time difference between the disconnect and exit events, if the disconnect time is available
+        const workerTime = times.get(worker.id);
+        const now = Date.now();
+        if (
+          workerTime?.disconnect &&
+          now - workerTime.disconnect > config.debugExitTimeout
+        ) {
+          const durationInSeconds = (workerTime.disconnect - now) / 1000;
+          console.log(
+            `Worker ${worker.id} was alive for ${durationInSeconds}s past exit`,
+          );
+        }
+        times.delete(worker.id);
+      }
+    }
   }
 
   function forceKill(signal: Signals) {
